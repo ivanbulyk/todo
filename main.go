@@ -51,6 +51,7 @@ func init() {
 }
 
 // CREATE DATABASE todo;
+// \c todo;
 // CREATE TABLE projects (
 // 	id SERIAL NOT NULL PRIMARY KEY,
 // 	name VARCHAR(500) NOT NULL,
@@ -83,7 +84,7 @@ func projectsIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query("SELECT * FROM projects")
+	rows, err := db.Query("SELECT * FROM projects ORDER BY ID ASC")
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -105,10 +106,13 @@ func projectsIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, pr := range prjs {
-
-		fmt.Printf("%v %v %v ", json.NewEncoder(w).Encode(pr.ID), json.NewEncoder(w).Encode(pr.Name), json.NewEncoder(w).Encode(pr.Description))
+	out, err := json.Marshal(prjs)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
 	}
+
+	fmt.Fprintf(w, string(out))
 
 }
 
@@ -126,7 +130,7 @@ func projectsShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.QueryRow("SELECT * FROM projects WHERE ID = $1", ID)
+	row := db.QueryRow("SELECT * FROM projects  WHERE ID = $1", ID)
 
 	pr := new(Project)
 	err := row.Scan(&pr.ID, &pr.Name, &pr.Description)
@@ -138,7 +142,13 @@ func projectsShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("%v %v %v ", json.NewEncoder(w).Encode(pr.ID), json.NewEncoder(w).Encode(pr.Name), json.NewEncoder(w).Encode(pr.Description))
+	out, err := json.Marshal(pr)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	fmt.Fprintf(w, string(out))
 }
 
 // Creating project
@@ -173,7 +183,12 @@ func projectsCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Project %v created successfully (%v row affected)\n", json.NewEncoder(w).Encode(Name), json.NewEncoder(w).Encode(rowsAffected))
+	out, err := json.Marshal(Name)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	fmt.Fprintf(w, "Project %v created successfully (%v row affected)\n", string(out), rowsAffected)
 }
 
 // Deleting project
@@ -201,7 +216,13 @@ func projectsDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Project %v deleted successfully (%v row affected)\n", json.NewEncoder(w).Encode(ID), json.NewEncoder(w).Encode(rowsAffected))
+	out, err := json.Marshal(ID)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	fmt.Fprintf(w, "Project %v deleted successfully (%v row affected)\n", string(out), rowsAffected)
+
 }
 
 // Updating project
@@ -236,5 +257,10 @@ func projectsUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Project %v updated successfully (%v row affected)\n", json.NewEncoder(w).Encode(ID), json.NewEncoder(w).Encode(rowsAffected))
+	out, err := json.Marshal(ID)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	fmt.Fprintf(w, "Project %v updated successfully, (%v row affected)\n", string(out), rowsAffected)
 }
